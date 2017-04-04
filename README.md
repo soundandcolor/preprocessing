@@ -1,0 +1,3 @@
+# Preprocessing / Exploratory Logic for MIDI
+
+Data goes in {repo root}/dataset/130000_...
