@@ -15,6 +15,10 @@ class HandcraftedKeyModel(nn.Module):
             offset += major_intervals[(mode + i) % self.num_modes]
         return ret
 
+    def mode_scale_weights(self, weights, mode, scale):
+        mode_w = self.mode_weights(weights, mode)
+        return torch.Tensor(mode_w[scale:] + mode_w[:scale])
+
     def key_index(self, key, scale):
         return (key - scale + 12) % 12
 
@@ -25,11 +29,12 @@ class HandcraftedKeyModel(nn.Module):
         return value
             
     def mode_scale_values(self, heats):
-        ret = torch.Tensor(self.num_modes, self.num_keys)
-        for mode in xrange(self.num_modes):
-            for key in xrange(self.num_keys):
-                ret[mode, key] = self.mode_scale_value(heats, mode, key)
-        return ret
+        #ret = torch.Tensor(self.num_modes, self.num_keys)
+        #for mode in xrange(self.num_modes):
+        #    for key in xrange(self.num_keys):
+        #        ret[mode, key] = self.mode_scale_value(heats, mode, key)
+        #return ret
+        return torch.mm(heats.unsqueeze(0), self.weights).view(self.num_modes, self.num_keys)
 
     def __init__(self, decay_rate=-0.0005, max_heat=5., weights=[1.5, 0.1, 0.6, 0.3, 0.8, 0.1, 0.2]):
         super(HandcraftedKeyModel, self).__init__()
@@ -39,7 +44,12 @@ class HandcraftedKeyModel(nn.Module):
         self.num_modes = 7
         self.num_keys = 12
         weights = torch.Tensor(weights)
-        self.weights = torch.stack([self.mode_weights(weights, mode) for mode in xrange(self.num_modes)])
+        #self.weights = torch.stack([self.mode_weights(weights, mode) for mode in xrange(self.num_modes)])
+        self.weights = torch.Tensor(self.num_modes, self.num_keys, self.num_keys)
+        for mode in xrange(self.num_modes):
+            for key in xrange(self.num_keys):
+                self.weights[mode, key] = self.mode_scale_weights(weights, mode, key)
+        self.weights = self.weights.view(-1, self.num_keys).transpose(1, 0)
 
     def forward(self, x):
         x = x[0]
