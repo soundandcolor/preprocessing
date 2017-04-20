@@ -4,6 +4,7 @@ import numpy as np
 import midi
 import os
 from itertools import islice
+from random import shuffle
 
 DATA_DIR = './dataset/'
 
@@ -37,6 +38,36 @@ class MidiFiles(data.Dataset):
 
     def __len__(self):
         return len(self.midi_files)
+
+class MidiLoader(object):
+    def __init__(self, data, batch_size=1, shuffle=False):
+        self.data = data
+        self.batch_size = batch_size
+        self.shuffle = shuffle
+
+    def __iter__(self):
+        order = range(len(self.data))
+        if self.shuffle:
+            shuffle(order)
+        i = 0
+        while i < len(self.data):
+            data = []
+            target = []
+            for s in xrange(i, i + self.batch_size):
+                if s < len(self.data):
+                    data_s, target_s = self.data[s]
+                    data += [data_s]
+                    target += [target_s]
+            data = torch.cat(\
+                [torch.unsqueeze(data[s], 0)\
+                 for s in xrange(i, i + self.batch_size)\
+                 if s < len(self.data)])
+            target = torch.cat(\
+                [torch.unsqueeze(target[s], 0)\
+                 for s in xrange(i, i + self.batch_size)\
+                 if s < len(self.data)])
+            yield data, target
+            i += self.batch_size
 
 def get_midi_data(labeler):
     return MidiFiles(DATA_DIR, labeler)

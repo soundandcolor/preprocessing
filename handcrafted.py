@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 import math
+import numpy as np
 
 # only works on batch size 1
 class HandcraftedKeyModel(nn.Module):
@@ -17,7 +18,7 @@ class HandcraftedKeyModel(nn.Module):
 
     def mode_scale_weights(self, weights, mode, scale):
         mode_w = self.mode_weights(weights, mode)
-        return torch.Tensor(mode_w[scale:] + mode_w[:scale])
+        return torch.Tensor(np.concatenate((mode_w.numpy()[scale:], mode_w.numpy()[:scale])))
 
     def key_index(self, key, scale):
         return (key - scale + 12) % 12
@@ -34,7 +35,7 @@ class HandcraftedKeyModel(nn.Module):
         #    for key in xrange(self.num_keys):
         #        ret[mode, key] = self.mode_scale_value(heats, mode, key)
         #return ret
-        return torch.mm(heats.unsqueeze(0), self.weights).view(self.num_modes, self.num_keys)
+        return 10. / torch.mm(heats.unsqueeze(0), self.weights).view(self.num_modes, self.num_keys)
 
     def __init__(self, decay_rate=-0.0005, max_heat=5., weights=[1.5, 0.1, 0.6, 0.3, 0.8, 0.1, 0.2]):
         super(HandcraftedKeyModel, self).__init__()
