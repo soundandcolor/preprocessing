@@ -49,7 +49,7 @@ class HandcraftedKeyModel(nn.Module):
         key_heats = torch.zeros(12)
         for i in xrange(len(x)):
             key_heats = key_heats * self.decay_rate
-            if x[i] > -10000:
+            if x[i] < 128:
                 key_heats[x[i] % 12] += 1.
             key_heats[key_heats > self.max_heat] = self.max_heat
             values = self.mode_scale_values(key_heats)

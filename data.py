@@ -30,7 +30,7 @@ class MidiFiles(data.Dataset):
                 if isinstance(event, midi.NoteOnEvent):
                     notes[event.tick] = event.data[0]
         max_tick = max(notes.keys())
-        ticks = [notes[tick] if (tick in notes) else -10000 for tick in xrange(max_tick)]
+        ticks = [notes[tick] if (tick in notes) else 128 for tick in xrange(max_tick)]
         ticks_tensor = torch.LongTensor(1, len(ticks))
         ticks_tensor[0] = torch.Tensor(ticks)
         label_tensor = self.labeler(ticks_tensor)
