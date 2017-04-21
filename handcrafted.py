@@ -20,22 +20,14 @@ class HandcraftedKeyModel(nn.Module):
         mode_w = self.mode_weights(weights, mode)
         return torch.Tensor(np.concatenate((mode_w.numpy()[scale:], mode_w.numpy()[:scale])))
 
-    def key_index(self, key, scale):
-        return (key - scale + 12) % 12
-
-    def mode_scale_value(self, heats, mode, scale):
-        value = 0.
-        for i, heat in enumerate(heats):
-            value += heat * self.weights[mode, self.key_index(i, scale)]
-        return value
-            
     def mode_scale_values(self, heats):
-        #ret = torch.Tensor(self.num_modes, self.num_keys)
-        #for mode in xrange(self.num_modes):
-        #    for key in xrange(self.num_keys):
-        #        ret[mode, key] = self.mode_scale_value(heats, mode, key)
-        #return ret
-        return 10. / torch.mm(heats.unsqueeze(0), self.weights).view(self.num_modes, self.num_keys)
+        flat_values = 10. / torch.mm(heats.unsqueeze(0), self.weights)
+        _, sorted_ind = torch.sort(flat_values)
+        flat_values.zero_()
+        flat_values[0,sorted_ind[0,-1]] = .7
+        flat_values[0,sorted_ind[0,-2]] = .2
+        flat_values[0,sorted_ind[0,-3]] = .1
+        return flat_values.view(self.num_modes, self.num_keys)
 
     def __init__(self, decay_rate=-0.0005, max_heat=5., weights=[1.5, 0.1, 0.6, 0.3, 0.8, 0.1, 0.2]):
         super(HandcraftedKeyModel, self).__init__()
@@ -45,7 +37,6 @@ class HandcraftedKeyModel(nn.Module):
         self.num_modes = 7
         self.num_keys = 12
         weights = torch.Tensor(weights)
-        #self.weights = torch.stack([self.mode_weights(weights, mode) for mode in xrange(self.num_modes)])
         self.weights = torch.Tensor(self.num_modes, self.num_keys, self.num_keys)
         for mode in xrange(self.num_modes):
             for key in xrange(self.num_keys):
