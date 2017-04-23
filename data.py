@@ -23,17 +23,20 @@ class MidiFiles(data.Dataset):
                     self.midi_files += [os.path.join(root, filename)]
 
     def __getitem__(self, index):
-        pattern = midi.read_midifile(self.midi_files[index])
-        notes = {}
-        for track in pattern:
-            for event in track:
-                if isinstance(event, midi.NoteOnEvent):
-                    notes[event.tick] = event.data[0]
-        max_tick = max(notes.keys())
-        ticks = [notes[tick] if (tick in notes) else 128 for tick in xrange(max_tick)]
+        try:
+            pattern = midi.read_midifile(self.midi_files[index])
+            notes = {}
+            for track in pattern:
+                for event in track:
+                    if isinstance(event, midi.NoteOnEvent):
+                        notes[event.tick] = event.data[0]
+            max_tick = max(notes.keys())
+            ticks = [notes[tick] if (tick in notes) else 128 for tick in xrange(max_tick)]
+        except:
+            ticks = [128]
         ticks_tensor = torch.LongTensor(1, len(ticks))
         ticks_tensor[0] = torch.Tensor(ticks)
-        label_tensor = self.labeler(ticks_tensor)
+        label_tensor = self.labeler(ticks_tensor).data
         return ticks_tensor[0], label_tensor[0]
 
     def __len__(self):
@@ -44,6 +47,9 @@ class MidiLoader(object):
         self.data = data
         self.batch_size = batch_size
         self.shuffle = shuffle
+
+    def __len__(self):
+        return len(self.data)
 
     def __iter__(self):
         order = range(len(self.data))
@@ -58,14 +64,8 @@ class MidiLoader(object):
                     data_s, target_s = self.data[s]
                     data += [data_s]
                     target += [target_s]
-            data = torch.cat(\
-                [torch.unsqueeze(data[s], 0)\
-                 for s in xrange(i, i + self.batch_size)\
-                 if s < len(self.data)])
-            target = torch.cat(\
-                [torch.unsqueeze(target[s], 0)\
-                 for s in xrange(i, i + self.batch_size)\
-                 if s < len(self.data)])
+            data = torch.cat([torch.unsqueeze(data[s], 0) for s in xrange(len(data))])
+            target = torch.cat([torch.unsqueeze(target[s], 0) for s in xrange(len(target))])
             yield data, target
             i += self.batch_size
 
