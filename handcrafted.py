@@ -9,7 +9,8 @@ class HandcraftedKeyModel(nn.Module):
     def mode_weights(self, weights, mode):
         # need to fill in the non-key notes with default value
         major_intervals = [2,2,1,2,2,2,1]
-        ret = torch.ones(12) * 0.05
+        #ret = torch.ones(12) * 0.05
+        ret = torch.ones(12) * 20
         offset = 0
         for i in xrange(self.num_modes):
             ret[offset] = 1. / weights[i]

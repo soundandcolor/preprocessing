@@ -1,3 +1,4 @@
 dataset/*
+preprocessed/*
 *.pyc
 .ipynb_checkpoints/*
